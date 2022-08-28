@@ -5,3 +5,6 @@ Repository for the analysis of which CHCs or CHC classes influence the survival 
   - Partial least squares regressions (PLSR) to identify which covariates best explain survival (measured in mean LT50 per group replicate)
   - Visualizations of PLSR results, primarily using base plots and ggscatter
   - Stacked bar graph of different CHC classes per colony CHC profile
+
+Examples of results/graphs from this PLSR branch:
+![PC1_vs_LT50d](https://user-images.githubusercontent.com/15988774/187090595-c3f59322-1efc-4c80-83f7-3b5b5fa26056.jpg)

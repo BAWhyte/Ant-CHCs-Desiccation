@@ -7,7 +7,7 @@ Repository for the analysis of which CHCs or CHC classes influence the survival 
   - Stacked bar graph of different CHC classes per colony CHC profile
 
 **Examples of results/graphs from this PLSR branch:**
-
+---
 ![PC1_vs_LT50d](https://user-images.githubusercontent.com/15988774/187090595-c3f59322-1efc-4c80-83f7-3b5b5fa26056.jpg)
 ![Table2_LM_PLSR_White](https://user-images.githubusercontent.com/15988774/187090706-5a00e74e-04c2-4053-9aa0-c25867874f85.jpg)
 ![CorrelatedPairs](https://user-images.githubusercontent.com/15988774/187090629-0b385ba7-f9f2-46f3-b73e-21f1c363bf42.jpeg)

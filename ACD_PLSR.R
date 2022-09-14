@@ -18,26 +18,25 @@ library(pls) # for principle component regression
 library(stargazer) # for automatic latex outputs of lm objects
 library(xtable) # for latex table outputs
 library(ggbiplot) # for ggplot type PCA biplots
-options(xtable.floating = FALSE)
-options(xtable.timestamp = "")
 
 ## Set WD + load data
 #setwd("F:/Users/Brian/Google Drive (ba.whyte@berkeley.edu)/R_folder/1 - NeilNSF/1 - Publication")
 setwd("H:/My Drive/0 - R/1 - NeilNSF/1 - Publication/Resubmitting")
 #setwd("/Volumes/GoogleDrive/My Drive/0 - R/1 - NeilNSF/1 - Publication/Resubmitting")
-data <- read.csv("ModelData_byTube_Aug2022.csv")
-#data <- read.csv("ModelData_PrelimPCA_byClass.csv")
-#data1 <- read.csv("ModelData_byTube_July2022.csv")
-#data2 <- read.csv("ModelData_byNest_Jun2022.csv")
-#data2 <- subset(data2, select = c(NestID, Chain))
-#df2 <- left_join(data1, data2, by = "NestID")
-#write.csv(df2, "ModelData_byTube_Aug2022.csv")
+data <- read.csv("ModelData_byTube_Sep2022.csv")
+## Convert CHC mass to "CHC mass per body mass"
+df1 <- subset(data, select = c(17:88)) # only individual CHCs
+bm <- data$Avg
+df2 <- df1 / t(bm)
+df <- data.frame(data$LT50d, df2)
+names(df)[names(df) == 'data.LT50d'] <- 'LT50'
 
 ## Colony colors
 primary <- "#FFDF66" # Main (large) supercolony
 cLH <- "#0582CA" # Lake Hodges
 cLS <- "mediumorchid1" # Lake Skinner
 cSW <- "lightgreen" # SweetWater
+#
 
 ## BLOCK 1: Collinearity testing --------------------------------------------------------------------------------------------
 # Collinearity plot (ggpairs) of chemical data
@@ -58,13 +57,9 @@ gs0 <- ggscatter(df1, x = "wChain", y = "LT50d",
 
 ## PCR (Principal component regression) using pls package
 ##https://www.r-bloggers.com/2016/07/performing-principal-components-regression-pcr-in-r/
-dfp1 <- subset(data, select = c(LT50d,Avg,pL,pAke,pMo,pDi,pTri,wChain))
-dfp2 <- subset(data, select = c(LT50d,Avg,SumL,SumAke,SumMo,SumDi,SumTri,wChain))
-#dfp3 <- subset(data, select = c(LT50d,19:90)) # all CHCs individually
-#dfp3 <- subset(data, select = c(LT50d,Avg,pL,pMethyl,wChain))
-#dfp4 <- subset(data, select = c(LT50d,Avg,Reb_Alkanes,Reb_Malkanes,wChain))
-#dfp <- data[c(17:88)] # All CHCs for preliminary PCA
-#dfp <- data[c(3:10)] # All CHCs for preliminary PCA
+#dfp1 <- subset(data, select = c(LT50d,Avg,pL,pAke,pMo,pDi,pTri,wChain))
+#dfp2 <- subset(data, select = c(LT50d,Avg,SumL,SumAke,SumMo,SumDi,SumTri,wChain))
+#dfp3 <- subset(df, select = c(LT50,17:88)) # all CHCs individually
 
 ## Preliminary PCA of all individual CHCs
 #dfp.class <- data[,2]
@@ -73,24 +68,14 @@ dfp2 <- subset(data, select = c(LT50d,Avg,SumL,SumAke,SumMo,SumDi,SumTri,wChain)
 
 ## Partial Least Squares Regression (PLSR)
 ##https://cran.r-project.org/web/packages/pls/vignettes/pls-manual.pdf
-## Model 1 - using CHC class proportions
-plsr1 <- plsr(LT50d ~ ., data = dfp1, scale = TRUE, validation = "CV") # partial least squares regression
-validationplot(plsr1, val.type = "R2") # according to R2 fit, only two PCA components are needed to make best model fit
-plot(RMSEP(plsr1), legendpos = "topright") # How many components are needed to minimize RMSEP
-plot(plsr1, ncomp = 1, asp = 1, line = TRUE) # Cross-validated predictions, using x num of components. asp = aspect ratio.
+m1 <- plsr(LT50 ~ ., data = df, scale = TRUE, validation = "CV") # partial least squares regression
+validationplot(m1, val.type = "R2") # according to R2 fit, only two PCA components are needed to make best model fit
+plot(RMSEP(m1), legendpos = "topright") # How many components are needed to minimize RMSEP
+plot(m1, ncomp = 1, asp = 1, line = TRUE) # Cross-validated predictions, using x num of components. asp = aspect ratio.
 ncomp.permut <- selectNcomp(plsr1, method = "randomization", plot = TRUE)
-plot(plsr1, plottype = "correlation")
-biplot(plsr1, which = "loadings")
-plsr1$loading.weights # Loading weight of each covariate on each component
-## Model 2 - using CHC class mass estimates
-plsr2 <- plsr(LT50d ~ ., data = dfp1, scale = TRUE, validation = "CV") # partial least squares regression
-validationplot(plsr2, val.type = "R2") # according to R2 fit, only two PCA components are needed to make best model fit
-plot(RMSEP(plsr2), legendpos = "topright") # How many components are needed to minimize RMSEP
-plot(plsr2, ncomp = 1, asp = 1, line = TRUE) # Cross-validated predictions, using x num of components. asp = aspect ratio.
-ncomp.permut <- selectNcomp(plsr2, method = "randomization", plot = TRUE)
-plot(plsr2, plottype = "correlation")
-biplot(plsr2, which = "loadings")
-plsr2$loading.weights # Loading weight of each covariate on each component
+plot(m1, plottype = "correlation")
+biplot(m1, which = "loadings")
+m1$loading.weights # Loading weight of each covariate on each component
 
 ## BLOCK 3: PLSR model comparison graphs -----------------------------------------------------------------------------------------
 
@@ -106,16 +91,16 @@ legend("topright", legend = c("Model 1", "Model 2"), # Add legend explaining two
 
 ## BLOCK 4: PLSR component lws vs. LT50d -----------------------------------------------------------------------------------------
 
-## Data frame for loading weight correlations
-df <- data.frame(list(plsr2$validation$pred))
-Comp1 <- plsr2$scores[,1]
-Comp2 <- plsr2$scores[,2]
-RV <- dfp2$LT50d
+## Data frame for component correlations
+Comp1 <- m1$scores[,1] # why scores? What are these? Did a source recommend doing this correlation?
+Comp2 <- m1$scores[,2]
+RV <- dfp3$LT50d
+#Res <- df$
 ID <- data$Super
 Name <- data$NestID
-df <- data.frame(cbind(ID,Name,RV,Comp1,Comp2,df))
+df <- data.frame(ID,Name,RV,Comp1,Comp2)
 
-## PLSR Comp 1 vs. LT50d
+## Spearman correlation of PLSR components vs. LT50d
 gs1 <- ggscatter(df, x = "Comp1", y = "RV",
                  label = "Name", repel = TRUE,
                  #add = "reg.line", #conf.int = TRUE, 
@@ -124,7 +109,7 @@ gs1 <- ggscatter(df, x = "Comp1", y = "RV",
                  xlab = "PSLR Component 1", ylab = "Mean LT50 per replicate tube (Drierite only)") +
   #stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "~`,`~"))) +
   geom_smooth(method=lm, se=FALSE, color = "grey70", linetype = 2)
-## PLSR Comp 2 vs. LT50d
+#theme_black()
 gs2 <- ggscatter(df, x = "Comp2", y = "RV", 
                  label = "Name", repel = TRUE,
                  #add = "reg.line", #conf.int = TRUE, 
@@ -133,6 +118,35 @@ gs2 <- ggscatter(df, x = "Comp2", y = "RV",
                  xlab = "PSLR Component 2", ylab = "Mean LT50 per replicate tube (Drierite only)") +
   #stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "~`,`~"))) +
   geom_smooth(method=lm, se=FALSE, color = "grey70", linetype = 2)
+  #theme_black()
+
+## Data frame for forest plot showing all loading weights in a component
+cov <- colnames(data)[17:88]
+lws <- as.numeric(m1$loading.weights[,1]) # loading weights for a component
+dfp <- data.frame(cov,lws)
+colnames(dfp) <- c("COV","LWS")
+norder <- dfp[order(dfp$LWS),][,1] # order of COV by ascending LWS
+dfp$COV <- factor(dfp$COV, levels = c(norder))
+
+## Hard threshold for loading weights (w* = median(w)/interquartile(w))
+#https://analyticalsciencejournals-onlinelibrary-wiley-com.libproxy.berkeley.edu/doi/10.1002/cem.3226
+ml <- median(dfp$LWS) # median of loading weights for Comp 1
+qr <- 0.03372973-0.15120447 # 75% minus 25% from quantile(dfp$LWS)
+w <- ml/qr # w* = median(w)/interquartile range(w)\
+
+## Manual forest plot (conf. int. plot)
+gHR <- ggplot(dfp, aes(x=COV, y=LWS)) +
+  theme_bw() +
+  #theme_black() +
+  #theme(plot.margin=unit(c(1,2,1,2),"cm")) +
+  geom_hline(yintercept=0, lty=2) +
+  #geom_errorbar(aes(ymin=LOW, ymax=UPP), color="darkgrey", width=0.25) +
+  geom_point(stat="identity", shape=1, size=3) +
+  #scale_y_continuous(position = "right") + 
+  coord_flip() +
+  ylab("") +
+  xlab("")
+
 
 ## BLOCK 5: CHC stacked bar plot ----------------------------------------------------------------------------------------
 ## CHC class proportions df 

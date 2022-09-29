@@ -21,88 +21,54 @@ setwd("H:/My Drive/0 - R/Ant-CHCs-Desiccation")
 #setwd("/Volumes/GoogleDrive/My Drive/0 - R/1 - NeilNSF/1 - Publication/Resubmitting")
 data <- read.csv("ModelData_byTube_Sep2022.csv")
 
+## Data frame 1 = Raw masses, individual CHCs
 df1 <- subset(data, select = c(17:88)) # only individual CHCs
-bm <- data$Avg
-df2 <- df1 / t(bm)
 df1 <- cbind(data$LT50d, df1)
-df2 <- cbind(data$LT50d, df2)
 names(df1)[names(df2) == 'data$LT50d'] <- 'LT50'
+## Data frame 2 = CHC mass per body mass, individual CHCs
+df2 <- subset(data, select = c(17:88)) # only individual CHCs
+bm <- data$Avg
+df2 <- df2 / t(bm)
+df2 <- cbind(data$LT50d, df2)
 names(df2)[names(df2) == 'data$LT50d'] <- 'LT50'
+## Data frame 3 = CHC mass per body mass, CHC classes
+df3 <- subset(data, select = c(89:93))/ t(bm)
+df3 <- cbind(data$LT50d, df3)
+names(df3)[names(df3) == 'data$LT50d'] <- 'LT50'
 #
 
-## BLOCK 1: Example but with individual CHCs to predict LT50d -------------------------------------------------------
-# Split the data set into training and test sets
-split <- sample.split(df1, SplitRatio = 0.7)
-train <- subset(df1, split == "TRUE") # 70% of data
-test <- subset(df1, split == "FALSE") # 30% of data
+## BLOCK 1: PLSR models (byTube) -----------------------------------------------------------------------------------------
 
-set.seed(120)  # Setting seed. IIRC this is preferred before randomization in general
-reg_RF = randomForest(x = train[-1], # remove the LT50d column
-                             y = train$LT50, # because LT50d will be the Y we try to predict
-                             ntree = 1000, type = "regression")
-y_pred = predict(reg_RF, newdata = test[-1]) # also remove species column from test dataset
-confusion_mtx = table(test[,1], y_pred)
-#importance(reg_RF) # showing only top 30 variables, I think
-#varImpPlot(reg_RF)
-v <- as.data.frame(importance(reg_RF))
-v$new <- rownames(v)
-top <- v[order(-v$IncNodePurity),]
-head(top,10) # view top 10 on ordered list
-#write.csv(top5, file = "IncNodePurityList.csv")
-t <- c() # empty list to hold all top 10 CHC names
-for (i in 1:100) {
-  reg_RF = randomForest(x = train[-1], # remove the LT50d column
-                        y = train$LT50, # because LT50d will be the Y we try to predict
-                        ntree = 1000, type = "regression")
-  v <- as.data.frame(importance(reg_RF))
-  v$new <- rownames(v)
-  top <- v[order(-v$IncNodePurity),]
-  t <- c(t,top$new[1:10])
-  #print("Done!")
-}
-plot(as.factor(t), las = 2)
+## PLSR data frames
+dfp1 <- subset(data, select = c(LT50d,Avg,pL,pAke,pMo,pDi,pTri,wChain))
+dfp2 <- subset(data, select = c(LT50d,Avg,SumL,SumAke,SumMo,SumDi,SumTri,wChain)) # raw mass estimates
+dfp3 <- df3
 
-#varImpPlot(reg_RF)
-#varImpPlot(classifier_RF, n.var=(nrow(df))) # showing all variables
+#dfp3 <- subset(data, select = c(LT50d,SumL,SumAke,SumMo,SumDi,SumTri,wChain)) # CHC mass per body mass
 
-## BLOCK 2: Correlating individual CHCs vs. LT50 -------------------------------------------------------------------
-# Spearman correlation X vs. Y
-g1 <- ggscatter(data, x = "SumCHC", y = "Avg",
-                 add = "reg.line", #conf.int = TRUE, 
-                 cor.coef = TRUE, cor.method = "spearman")
+## Partial Least Squares Regression (PLSR)
+##https://cran.r-project.org/web/packages/pls/vignettes/pls-manual.pdf
+## Model 1 - using CHC class proportions
+plsr1 <- plsr(LT50d ~ ., data = dfp1, scale = TRUE, validation = "CV") # partial least squares regression
+plsr1$loading.weights # Loading weight of each covariate on each component
+## Model 2 - using CHC class mass estimates
+plsr2 <- plsr(LT50d ~ ., data = dfp2, scale = TRUE, validation = "CV") # partial least squares regression
+plsr2$loading.weights # Loading weight of each covariate on each component
+## Model 3 - using CHC mass per body mass, summed for each class
+plsr3 <- plsr(LT50 ~ ., data = dfp3, scale = TRUE, validation = "CV") # partial least squares regression
+plsr3$loading.weights # Loading weight of each covariate on each component
 
-# Correlated pairs plot
-#dfp <- subset(df, select = c("LT50","MeC34.3492","n.C33.3300","MeC32.3258","MeC33.3345","TriMeC31.3225"))
-dfp <- subset(df, select = c("LT50",rownames(top5)[1:5]))
-ggpairs(dfp, lower = list(continuous = wrap("smooth")), upper = list(continous = wrap("cor", method = "spearman")))
+## BLOCK 2: PLSR model RMSEP graph -----------------------------------------------------------------------------------------
 
-# P-values of 72 Spearman correlations between LT50 and each CHC
-#df <- cbind(data$LT50d, df2)
-#ames(df)[names(df) == 'data$LT50d'] <- 'LT50'
-plist <- c() # empty list to store p values from spearman tests
-clist <- c() # empty list to store correlation coefficients from spearman tests
-for (i in 1:72) {
-  y <- df1$LT50 # same Y variable each time
-  x <- df1[,i+1] # current CHC column
-  p <- as.numeric(cor.test(x,y,method="spearman",exact=FALSE)[3]) # p-value of current spearman test
-  c <- as.numeric(cor.test(x,y,method="spearman",exact=FALSE)[4]) # p-value of current spearman test
-  plist <- c(plist,p)
-  clist <- c(clist,c)
-}
-
-# Spearman data frame using df1 CHC values (CHC mass)
-sdf1 <- tibble(colnames(df1)[-1],p.adjust(plist,method="BH"),clist)
-colnames(sdf1) <- c("CHC","p-adjusted","coef")
-sdf1 <- sdf1[order(sdf1$`p-adjusted`),] # lowest value is most significant
-
-# Spearman data frame using df2 CHC values (CHC mass per body mass)
-sdf2 <- tibble(colnames(df2),p.adjust(plist,method="BH"),clist)
-colnames(sdf2) <- c("CHC","p-adjusted","coef")
-sdf2 <- sdf2[order(sdf2$`p-adjusted`),] # lowest value is most significant
-
-
-
-
+## RMSEP of model 1 vs. model 2
+ncomps <- c(1:7) # number of components
+RM1 <- c(2.048,1.783,1.797,1.817,1.860,1.878,1.909) # Cross-validated RMSEP values for PLSR 1 (proportions)
+RM2 <- c(2.113,1.945,1.894,1.871,1.841,1.895,1.779) # Cross-validated RMSEP values for PLSR 2 (mass estimates)
+df <- data.frame(ncomps,RM1,RM2)
+plot(ncomps,RM2,type = "b",xlab="Num. of components",ylab="RMSEP",pch=16,col="gray") # Plot with one model data points and line
+lines(ncomps,RM1,type = "b",pch=16) # Add other model to same graph
+legend("topright", legend = c("Model 1", "Model 2"), # Add legend explaining two models
+       pch = c(16,16),col=c("black","gray"))
 
 ## BLOCK 3: PLSR loading weights to compare to random forest selection ---------------------------------------------------------
 
@@ -136,7 +102,77 @@ gHR <- ggplot(dfp, aes(x=COV, y=LWS)) +
   xlab("")
 #
 
-## BLOCK 4: CHC stacked bar plot ----------------------------------------------------------------------------------------
+## BLOCK 4: Random forest with individual CHCs to predict LT50d -------------------------------------------------------
+# Split the data set into training and test sets
+split <- sample.split(df2, SplitRatio = 0.7)
+train <- subset(df2, split == "TRUE") # 70% of data
+test <- subset(df2, split == "FALSE") # 30% of data
+
+set.seed(120)  # Setting seed. IIRC this is preferred before randomization in general
+reg_RF = randomForest(x = train[-1], # remove the LT50d column
+                      y = train$LT50, # because LT50d will be the Y we try to predict
+                      ntree = 1000, type = "regression")
+y_pred = predict(reg_RF, newdata = test[-1]) # also remove species column from test dataset
+confusion_mtx = table(test[,1], y_pred)
+#importance(reg_RF) # showing only top 30 variables, I think
+varImpPlot(reg_RF)z
+v <- as.data.frame(importance(reg_RF))
+v$new <- rownames(v)
+top <- v[order(-v$IncNodePurity),]
+head(top,10) # view top 10 on ordered list
+#write.csv(top5, file = "IncNodePurityList.csv")
+t <- c() # empty list to hold all top 10 CHC names
+for (i in 1:100) {
+  reg_RF = randomForest(x = train[-1], # remove the LT50d column
+                        y = train$LT50, # because LT50d will be the Y we try to predict
+                        ntree = 1000, type = "regression")
+  v <- as.data.frame(importance(reg_RF))
+  v$new <- rownames(v)
+  top <- v[order(-v$IncNodePurity),]
+  t <- c(t,top$new[1:10])
+  #print("Done!")
+}
+plot(as.factor(t))
+
+
+#varImpPlot(reg_RF)
+#varImpPlot(classifier_RF, n.var=(nrow(df))) # showing all variables
+## BLOCK 5: Spearman correlating individual CHCs vs. LT50 -------------------------------------------------------------------
+# Spearman correlation X vs. Y
+g1 <- ggscatter(data, x = "SumCHC", y = "Avg",
+                add = "reg.line", #conf.int = TRUE, 
+                cor.coef = TRUE, cor.method = "spearman")
+
+# Correlated pairs plot
+#dfp <- subset(df, select = c("LT50","MeC34.3492","n.C33.3300","MeC32.3258","MeC33.3345","TriMeC31.3225"))
+dfp <- subset(df, select = c("LT50",rownames(top5)[1:5]))
+ggpairs(dfp, lower = list(continuous = wrap("smooth")), upper = list(continous = wrap("cor", method = "spearman")))
+
+# P-values of 72 Spearman correlations between LT50 and each CHC
+#df <- cbind(data$LT50d, df2)
+#ames(df)[names(df) == 'data$LT50d'] <- 'LT50'
+plist <- c() # empty list to store p values from spearman tests
+clist <- c() # empty list to store correlation coefficients from spearman tests
+for (i in 1:72) {
+  y <- df1$LT50 # same Y variable each time
+  x <- df1[,i+1] # current CHC column
+  p <- as.numeric(cor.test(x,y,method="spearman",exact=FALSE)[3]) # p-value of current spearman test
+  c <- as.numeric(cor.test(x,y,method="spearman",exact=FALSE)[4]) # p-value of current spearman test
+  plist <- c(plist,p)
+  clist <- c(clist,c)
+}
+
+# Spearman data frame using df1 CHC values (CHC mass)
+sdf1 <- tibble(colnames(df1)[-1],p.adjust(plist,method="BH"),clist)
+colnames(sdf1) <- c("CHC","p-adjusted","coef")
+sdf1 <- sdf1[order(sdf1$`p-adjusted`),] # lowest value is most significant
+
+# Spearman data frame using df2 CHC values (CHC mass per body mass)
+sdf2 <- tibble(colnames(df2),p.adjust(plist,method="BH"),clist)
+colnames(sdf2) <- c("CHC","p-adjusted","coef")
+sdf2 <- sdf2[order(sdf2$`p-adjusted`),] # lowest value is most significant
+
+## BLOCK 6: CHC stacked bar plot ----------------------------------------------------------------------------------------
 ## CHC class proportions df 
 dfb <- read.csv("CHC_classes_StackedBar.csv")
 dfb$NEST <- factor(dfb$NEST, levels = c("UK","DA","AB","LP","MT","LS","LH","SW"))

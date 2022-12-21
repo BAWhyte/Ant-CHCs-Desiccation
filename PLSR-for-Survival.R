@@ -11,6 +11,7 @@ rm(list=ls()) # Remove all variables
 
 ## Libraries
 library(ggplot2) # plotting
+library(GGally) # for ggpairs correlation plots
 library(ggpubr) # for ggscatter plots
 library(survival) # for survival functions
 library(dplyr) # data transforming
@@ -29,7 +30,13 @@ cLH <- "#0582CA" # Lake Hodges
 cLS <- "mediumorchid1" # Lake Skinner
 cSW <- "lightgreen" # SweetWater
 
-## BLOCK 1: Linear and PLSR models (byTube) -----------------------------------------------------------------------------------------
+## BLOCK 1: Collinearity testing --------------------------------------------------------------------------------------------
+# Collinearity plot (ggpairs) of chemical data
+df1 <- subset(data, select = c(LT50d,Avg,pL,pMo,pDi,pTri,wChain))
+colnames(df1) <- c("Body.Size","% n-alka","% mono-me","% di-me","% tri-me","W.Chain")
+ggpairs(df1, lower = list(continuous = wrap("smooth")), upper = list(continous = wrap("cor", method = "spearman")))
+
+## BLOCK 2: Linear and PLSR models (byTube) -----------------------------------------------------------------------------------------
 ## Linear regression (not trustworthy, because of collinearity)
 lm1 <- lm(LT50d ~ Avg + pL + pAke + pMo + pDi + pTri + wChain, data = data)
 
@@ -45,7 +52,7 @@ plot(plsr1, plottype = "correlation")
 biplot(plsr1, which = "loadings")
 plsr1$loading.weights # Loading weight of each covariate on each component
 
-## BLOCK 2: PLSR component lws vs. LT50d -----------------------------------------------------------------------------------------
+## BLOCK 3: PLSR component lws vs. LT50d -----------------------------------------------------------------------------------------
 
 ## Data frame for loading weight correlations
 df <- data.frame(list(plsr2$validation$pred))
@@ -76,7 +83,7 @@ gs2 <- ggscatter(df, x = "Comp2", y = "RV",
   geom_smooth(method=lm, se=FALSE, color = "grey70", linetype = 2) +
   theme_black()
 
-## BLOCK 3: Tables (latex, formattable) -----------------------------------------------------------------------------------------
+## BLOCK 4: Tables (latex, formattable) -----------------------------------------------------------------------------------------
 ## LaTex tables
 xdf <- read.csv("PLSR_TableData.csv")
 print(xtable(xdf),

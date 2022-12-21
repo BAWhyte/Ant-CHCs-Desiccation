@@ -1,8 +1,8 @@
 # PLSR-for-Survival
 
-***
+
 ## I: Solution to a multicollinearity problem in ecological research
-***
+
 Chemical compounds on the exoskeleton of insects create a waxy waterproof layer that helps prevent water loss from their bodies. These "cuticular hydrocarbon compounds" (CHCs) are probably produced by the same biosynthetic pathways, so they are not independent variables. But if we want to know which CHCs or compound classes explain survival against water loss, we needed to treat them as separate variables in a regression model, which lead to impossibly large coefficients that cannot be trusted/interpreted. Sometimes, when covariates are so correlated with each other, regression models can't even output coefficients, and just give errors or "NA" instead. So, we need a strategy for dealing with multicollinearity. 
 
 I read some relevant chapters from ["Regression Model Strategies"](https://link.springer.com/book/10.1007/978-3-319-19425-7), and came across the solution many have heard of before: putting the data in a PCA model, and using the principal components as the model covariates instead. Previously, I had avoided this because the interpretation of a PCA and its components is limited. A PCA allows you to examine the dimensionality of the X values, and if you show that colonies are different in certain X values, then you could suggest that maybe this difference also explained the survival differences (Y values). However, there is a version of principal component regression that not only transforms X data into different dimensions, but also estimates how those dimensions relate to the response variable (Y values).

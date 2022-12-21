@@ -1,6 +1,6 @@
 ***
 
-## I: New solutions to the multicollinearity problem 
+## I: Solution to a multicollinearity problem in ecological research
 ***
 Chemical compounds on the exoskeleton of insects create a waxy waterproof layer that helps prevent water loss from their bodies. These "cuticular hydrocarbon compounds" (CHCs) are probably produced by the same biosynthetic pathways, so they are not independent variables. But if we want to know which CHCs or compound classes explain survival against water loss, we needed to treat them as separate variables in a regression model, which lead to impossibly large coefficients that cannot be trusted/interpreted. Sometimes, when covariates are so correlated with each other, regression models can't even output coefficients, and just give errors or "NA" instead. So, we need a strategy for dealing with multicollinearity. 
 

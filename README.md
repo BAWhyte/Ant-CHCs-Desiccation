@@ -43,8 +43,7 @@ summary(plsr_model)
 Just like a principal components analysis, the covariates are replaced with components that are transformations of the covariates you provided. Ideally, the majority of the variance in your data can be explained with a few of these components. So the first step to interpretation is to decide how many components are needed to explain our survival data. Remember, PLSR allows us to not only see how much of the X variance is explained (body size, CHC proportions, etc.) but also how much of the Y variance is explained (LT50 from all drierite tubes) by these components. The variance explained can be seen in the summary above, but I will summarize it in the table below:
 
 <center>
-![](H:/My Drive/R_folder/1 - NeilNSF/1 - Publication/Resubmitting/Table1_PLSRSummary.jpg)
-
+![Table1_PLSRSummary](https://user-images.githubusercontent.com/15988774/209012213-26dffe8f-e920-43ca-8e75-14593d889e00.jpg)
 </center>
 
 PC1 tells us the most about LT50, and the second component also adds some detail, but beyond that the help becomes negligible. PC2 is useful if we want to understand the dimensionality of the X variables (which is what usual PCA biplots show). RMSEP stands for "Root Mean Square Error of Prediction", and the decision of how many components to select should be judged by how minimized we can make this error prediction. Because 1.81 is as low as we can go, and we can achieve this with just the first two components, it is safe to just use these two components for our analysis and interpretation.
@@ -52,8 +51,7 @@ PC1 tells us the most about LT50, and the second component also adds some detail
 Each of these components is made from transformations of the covariates, and some of the covariates had more "weight" in these transformations. This part is hard to explain (some background provided in [this video](https://youtu.be/Vf7doatc2rA)), but to put it simply, if PC1 explains most of the Y variance, we can look at the "loading weights" from each covariate for PC1 in order to see which ones correlate most with PC1. Perhaps this will be easier to think of if we look at a regular PCA biplot using our data:
 
 <center>
-![](H:/My Drive/R_folder/1 - NeilNSF/1 - Publication/Resubmitting/XBiplot.jpeg)
-
+![XBiplot](https://user-images.githubusercontent.com/15988774/209012296-47f0e6b5-6188-459d-a39a-e5ef078e093c.jpeg)
 </center>
 
 The black numbers are the X scores (one for each sample and each component) and the red arrows are the loadings, or direction vectors. The direction vectors suggest that placement on the x axis (Comp 1) is largely influenced by body size and % of di-methyl alkanes, while the other covariates determine the y axis (Comp 2) placement of the scores. Without further information, we can use this to suggest that body size and % of di-methyl alkanes oppose each other, so if body size helps survival, then di-methyl alkanes might do the opposite. However, like the quote I mentioned before, there is no guarantee that the dimensionality of these components are associated with the outcome variable (survival). 
@@ -65,7 +63,7 @@ Because this is a PLSR, though, we know Comp 1 explains LT50, and we can see the
 ***
 
 <center>
-![](H:/My Drive/R_folder/1 - NeilNSF/1 - Publication/Resubmitting/Table2_LM_PLSR.jpg)
+![Table2_LM_PLSR](https://user-images.githubusercontent.com/15988774/209012367-4b0df348-a20c-4a09-b1b5-3c68b9de4f61.jpg)
 
 </center>
 
@@ -74,14 +72,14 @@ The results of these two analyses are similar, but the multiple regression can't
 For Comp 1, body size has the strongest positive effect and % of di-methyl alkanes has the strongest negative effect. We saw this on the biplot. Since Comp 1 explains the Y variance the best, higher body size is associated with increased survival, while a higher % of di-methyl alkanes is associated with decreased survival. This makes sense when we look at Comp 1 vs. LT50:
 
 <center>
-![](H:/My Drive/R_folder/1 - NeilNSF/1 - Publication/Resubmitting/PC1_vs_LT50d.jpg)
+![PC1_vs_LT50d](https://user-images.githubusercontent.com/15988774/209012440-acf1150b-83d5-469a-a35f-88e6db3d6dfb.jpg)
 
 </center>
 
 So Comp 1 really aligns with survival during desiccation, and we know which covariates define Comp 1. The remaining covariates help explain a different dimension of the data. Instead of correlating well with LT50, Comp 2 seems to separate the northern and southern nests in terms of their remaining CHC properties (% n-alkanes, mono-methyl, tri-methyl, and chain lengths):
 
 <center>
-![](H:/My Drive/R_folder/1 - NeilNSF/1 - Publication/Resubmitting/PC2_vs_LT50d.jpg)
+![PC2_vs_LT50d](https://user-images.githubusercontent.com/15988774/209012543-c5600233-5e36-477c-98f5-392eac84ced9.jpg)
 
 </center>
 

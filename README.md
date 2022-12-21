@@ -15,9 +15,7 @@ Therefore, a PLS regression (PLSR) is a better tool if we want to claim that cer
 
 *Carrascal, L. M., Galván, I., & Gordo, O. (2009). Partial least squares regression as an alternative to current regression methods used in ecology. Oikos, 118(5), 681-690.*
 
-***
 ## II: Data frame and PLSR summary 
-***
 
 ```{r eval=TRUE}
 ## Here is the structure or scale of our data, modified for use in PLSR:
@@ -55,9 +53,7 @@ The black numbers are the X scores (one for each sample and each component) and 
 
 Because this is a PLSR, though, we know Comp 1 explains LT50, and we can see the loading weights of each covariate in Comp 1 to claim which covariates most likely positively or negatively influenced survival. Making claims like this is similar to how we interpret the covariates or predictors of a multiple linear regression, so I'll show both the PLSR loading weights and the summary of a multiple regression below (using the basic `lm( )` function in R).
 
-***
 ## III: PLSR results and interpretation 
-***
 
 ![Table2_LM_PLSR](https://user-images.githubusercontent.com/15988774/209012367-4b0df348-a20c-4a09-b1b5-3c68b9de4f61.jpg)
 

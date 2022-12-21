@@ -48,9 +48,7 @@ PC1 tells us the most about LT50, and the second component also adds some detail
 
 Each of these components is made from transformations of the covariates, and some of the covariates had more "weight" in these transformations. This part is hard to explain (some background provided in [this video](https://youtu.be/Vf7doatc2rA)), but to put it simply, if PC1 explains most of the Y variance, we can look at the "loading weights" from each covariate for PC1 in order to see which ones correlate most with PC1. Perhaps this will be easier to think of if we look at a regular PCA biplot using our data:
 
-<center>
 ![XBiplot](https://user-images.githubusercontent.com/15988774/209012296-47f0e6b5-6188-459d-a39a-e5ef078e093c.jpeg)
-</center>
 
 The black numbers are the X scores (one for each sample and each component) and the red arrows are the loadings, or direction vectors. The direction vectors suggest that placement on the x axis (Comp 1) is largely influenced by body size and % of di-methyl alkanes, while the other covariates determine the y axis (Comp 2) placement of the scores. Without further information, we can use this to suggest that body size and % of di-methyl alkanes oppose each other, so if body size helps survival, then di-methyl alkanes might do the opposite. However, like the quote I mentioned before, there is no guarantee that the dimensionality of these components are associated with the outcome variable (survival). 
 
@@ -60,26 +58,17 @@ Because this is a PLSR, though, we know Comp 1 explains LT50, and we can see the
 ## III: PLSR results and interpretation 
 ***
 
-<center>
 ![Table2_LM_PLSR](https://user-images.githubusercontent.com/15988774/209012367-4b0df348-a20c-4a09-b1b5-3c68b9de4f61.jpg)
-
-</center>
 
 The results of these two analyses are similar, but the multiple regression can't be reasonably interpreted. More specifically, its coefficients are ridiculously large, and the % of tri-methyl alkanes can't even be considered because it is so correlated with the other covariates. The fact that we still have significant values is actually a good sign, because usually inflated coefficients also leads to inflated standard errors and overlapping confidence intervals. The PLSR, being a version of PCA, removes all problems of multicollineairity because the covariates are transformed into an orthogonal matrix, and the loading weights of each covariate in each component does not require a p-value to be considered relevant to interpretation. 
 
 For Comp 1, body size has the strongest positive effect and % of di-methyl alkanes has the strongest negative effect. We saw this on the biplot. Since Comp 1 explains the Y variance the best, higher body size is associated with increased survival, while a higher % of di-methyl alkanes is associated with decreased survival. This makes sense when we look at Comp 1 vs. LT50:
 
-<center>
 ![PC1_vs_LT50d](https://user-images.githubusercontent.com/15988774/209012440-acf1150b-83d5-469a-a35f-88e6db3d6dfb.jpg)
-
-</center>
 
 So Comp 1 really aligns with survival during desiccation, and we know which covariates define Comp 1. The remaining covariates help explain a different dimension of the data. Instead of correlating well with LT50, Comp 2 seems to separate the northern and southern nests in terms of their remaining CHC properties (% n-alkanes, mono-methyl, tri-methyl, and chain lengths):
 
-<center>
 ![PC2_vs_LT50d](https://user-images.githubusercontent.com/15988774/209012543-c5600233-5e36-477c-98f5-392eac84ced9.jpg)
-
-</center>
 
 This is as far as my interpretation and understanding go, right now. Perhaps this new analysis invites new investigations into the CHC profiles. For instance, does it make sense to consider di-methyl alkanes has being worse at water proofing than the other methyl alkanes? Are the di-methyl alkanes in that weak-zone of not only having methyl branches, but also having small chain lengths? Last I remember, they were around the same size as the tri-methyl alkanes on the profile. 
 

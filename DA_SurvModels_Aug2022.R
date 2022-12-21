@@ -1,11 +1,6 @@
 ########################################################
-### DESICCATION ANALYSIS - MULTILEVEL COX REGRESSION ###
-# created by Brian Whyte, Sep 2020
-#
-# PURPOSE: Use Cox regression to analyze predictors of survival rather than treating LT50 as
-#          response variable in a lme4 mixed effects model. This code will also use dplyr to
-#          "attach" our predictor values from one data frame to our KM data frame, which is
-#          a data transformation required to perform the Cox regression.
+### Partial least squares regression for survival analysis ###
+# created by Brian Whyte, Sep 2021
 # 
 ###  - - - - - - - - - - - -   ###
 ## BLOCK 0: Set up + clean up -------------------------------------------------------
@@ -24,88 +19,16 @@ library(pls) # for principle component regression
 library(stargazer) # for automatic latex outputs of lm objects
 library(xtable) # for latex table outputs
 library(ggbiplot) # for ggplot type PCA biplots
-#options(scipen=999)
-options(xtable.floating = FALSE)
-options(xtable.timestamp = "")
 
 ## Set WD + load data
-#setwd("F:/Users/Brian/Google Drive (ba.whyte@berkeley.edu)/R_folder/1 - NeilNSF/1 - Publication")
-setwd("H:/My Drive/0 - R/1 - NeilNSF/1 - Publication/Resubmitting")
-#setwd("/Volumes/GoogleDrive/My Drive/0 - R/1 - NeilNSF/1 - Publication/Resubmitting")
-data <- read.csv("ModelData_byTube_Aug2022.csv")
-#data <- read.csv("ModelData_PrelimPCA_byClass.csv")
-#data1 <- read.csv("ModelData_byTube_July2022.csv")
-#data2 <- read.csv("ModelData_byNest_Jun2022.csv")
-#data2 <- subset(data2, select = c(NestID, Chain))
-#df2 <- left_join(data1, data2, by = "NestID")
-#write.csv(df2, "ModelData_byTube_Aug2022.csv")
+setwd("Your/Path/")
+data <- read.csv("ExampleData.csv")
 
 ## Colony colors
 primary <- "#FFDF66" # Main (large) supercolony
 cLH <- "#0582CA" # Lake Hodges
 cLS <- "mediumorchid1" # Lake Skinner
 cSW <- "lightgreen" # SweetWater
-
-## Theme_black function for ggplots
-{theme_black = function(base_size = 12, base_family = "") {
-  
-  theme_grey(base_size = base_size, base_family = base_family) %+replace%
-    
-    theme(
-      # Specify axis options
-      axis.line = element_blank(),  
-      axis.text.x = element_text(size = base_size*0.8, color = "white", lineheight = 0.9),  
-      axis.text.y = element_text(size = base_size*0.8, color = "white", lineheight = 0.9),  
-      axis.ticks = element_line(color = "white", size  =  0.2),  
-      axis.title.x = element_text(size = base_size, color = "white", margin = margin(0, 10, 0, 0)),  
-      axis.title.y = element_text(size = base_size, color = "white", angle = 90, margin = margin(0, 10, 0, 0)),  
-      axis.ticks.length = unit(0.3, "lines"),   
-      # Specify legend options
-      legend.background = element_rect(color = NA, fill = "black"),  
-      legend.key = element_rect(color = "white",  fill = "black"),  
-      legend.key.size = unit(1.2, "lines"),  
-      legend.key.height = NULL,  
-      legend.key.width = NULL,      
-      legend.text = element_text(size = base_size*0.8, color = "white"),  
-      legend.title = element_text(size = base_size*0.8, face = "bold", hjust = 0, color = "white"),  
-      legend.position = "right",  
-      legend.text.align = NULL,  
-      legend.title.align = NULL,  
-      legend.direction = "vertical",  
-      legend.box = NULL, 
-      # Specify panel options
-      panel.background = element_rect(fill = "black", color  =  NA),  
-      panel.border = element_rect(fill = NA, color = "white"),  
-      panel.grid.major = element_line(color = "grey35"),  
-      panel.grid.minor = element_line(color = "grey20"),  
-      panel.margin = unit(0.5, "lines"),   
-      # Specify facetting options
-      strip.background = element_rect(fill = "grey30", color = "grey10"),  
-      strip.text.x = element_text(size = base_size*0.8, color = "white"),  
-      strip.text.y = element_text(size = base_size*0.8, color = "white",angle = -90),  
-      # Specify plot options
-      plot.background = element_rect(color = "black", fill = "black"),  
-      plot.title = element_text(size = base_size*1.2, color = "white"),  
-      plot.margin = unit(rep(1, 4), "lines")
-      
-    )
-  
-}}
-
-## BLOCK 1: Collinearity testing --------------------------------------------------------------------------------------------
-# Collinearity plot (ggpairs) of chemical data
-df1 <- subset(data, select = c(LT50d,Avg,pL,pMo,pDi,pTri,wChain))
-df2 <- subset(data, select = c(LT50d,pL,pMo,pDi,pTri))
-df3 <- subset(data, select = c(LT50d,Avg,SumCHC))
-df4 <- subset(data, select = c(Avg,SumL,SumAke,SumMo,SumDi,SumTri,SumCHC))
-#colnames(df1) <- c("Body.Size","% n-alka","% mono-me","% di-me","% tri-me","W.Chain")
-#windows();
-ggpairs(df4, lower = list(continuous = wrap("smooth")), upper = list(continous = wrap("cor", method = "spearman")))
-
-# Spearman correlation X vs. Y
-gs0 <- ggscatter(df1, x = "wChain", y = "LT50d", 
-                 add = "reg.line", #conf.int = TRUE, 
-                 cor.coef = TRUE, cor.method = "spearman")
 
 ## BLOCK 2: Linear or logistic regression (Data = byTube) -------------------------------------------------------------------
 m1 <- lm(LT50d ~ Avg, data = data)
@@ -127,21 +50,6 @@ dfp6 <- subset(data, select = c(LT50d,L.chain,Ake.chain,Mo.chain,Di.chain,Tri.ch
 dfp7 <- subset(data, select = c(LT50d,pChain.L,pChain.Mo,pChain.Di,pChain.Tri))
 dfp8 <- subset(data, select = c(LT50d,pL,pAke,pMo,pDi,pTri,wChain))
 dfp9 <- subset(data, select = c(LT50d,19:90)) # all CHCs individually
-#dfp3 <- subset(data, select = c(LT50d,Avg,pL,pMethyl,wChain))
-#dfp4 <- subset(data, select = c(LT50d,Avg,Reb_Alkanes,Reb_Malkanes,wChain))
-#dfp <- data[c(17:88)] # All CHCs for preliminary PCA
-#dfp <- data[c(3:10)] # All CHCs for preliminary PCA
-
-
-## Principal Component Regression (PCR)
-#pcr_model <- pcr(LT50d ~ ., data = dfp, scale = TRUE, validation = "CV") # scale = TRUE centers all data to mean of 0 w SD 1, CV = cross validate
-#validationplot(pcr_model, val.type = "R2") # according to R2 fit, only two PCA components are needed to make best model fit
-#coefplot(pcr_model) # of the covariates, two of them had the highest coefficients (2 and 5, so, pL and pTri?)
-
-## Preliminary PCA of all individual CHCs
-#dfp.class <- data[,2]
-#dfp.pca <- prcomp(dfp, center = TRUE, scale. = TRUE)
-#gb <- ggbiplot(dfp.pca, obs.scale = 1, var.scale = 1, ellipse = TRUE, circle = TRUE)
 
 ## Partial Least Squares Regression (PLSR)
 ##https://cran.r-project.org/web/packages/pls/vignettes/pls-manual.pdf
@@ -153,36 +61,6 @@ ncomp.permut <- selectNcomp(plsr1, method = "randomization", plot = TRUE)
 plot(plsr1, plottype = "correlation")
 biplot(plsr1, which = "loadings")
 plsr1$loading.weights # Loading weight of each covariate on each component
-
-plsr2 <- plsr(LT50d ~ ., data = dfp2, scale = TRUE, validation = "CV") # partial least squares regression
-validationplot(plsr2, val.type = "R2") # according to R2 fit, only two PCA components are needed to make best model fit
-plot(RMSEP(plsr2), legendpos = "topright") # How many components are needed to minimize RMSEP
-plot(plsr2, ncomp = 1, asp = 1, line = TRUE) # Cross-validated predictions, using x num of components. asp = aspect ratio.
-ncomp.permut <- selectNcomp(plsr2, method = "randomization", plot = TRUE)
-plot(plsr2, plottype = "correlation")
-biplot(plsr2, which = "loadings")
-plsr2$loading.weights # Loading weight of each covariate on each component
-
-plsr3 <- plsr(LT50d ~ ., data = dfp3, scale = TRUE, validation = "CV") # partial least squares regression
-ncomp.permut <- selectNcomp(plsr3, method = "randomization", plot = TRUE)
-
-plsr4 <- plsr(LT50d ~ ., data = dfp4, scale = TRUE, validation = "CV") # partial least squares regression
-ncomp.permut <- selectNcomp(plsr4, method = "randomization", plot = TRUE)
-
-plsr5 <- plsr(LT50d ~ ., data = dfp5, scale = TRUE, validation = "CV") # partial least squares regression
-ncomp.permut <- selectNcomp(plsr5, method = "randomization", plot = TRUE)
-
-plsr6 <- plsr(LT50d ~ ., data = dfp6, scale = TRUE, validation = "CV") # partial least squares regression
-ncomp.permut <- selectNcomp(plsr6, method = "randomization", plot = TRUE)
-
-plsr7 <- plsr(LT50d ~ ., data = dfp7, scale = TRUE, validation = "CV") # partial least squares regression
-ncomp.permut <- selectNcomp(plsr7, method = "randomization", plot = TRUE)
-
-plsr8 <- plsr(LT50d ~ ., data = dfp8, scale = TRUE, validation = "CV") # partial least squares regression
-ncomp.permut <- selectNcomp(plsr8, method = "randomization", plot = TRUE)
-
-plsr9 <- plsr(LT50d ~ ., data = dfp9, scale = TRUE, validation = "CV", ncomp = 2) # Limit this one to 2 components
-plsr9$loading.weights
 
 ## BLOCK 4: PLSR model comparison graphs -----------------------------------------------------------------------------------------
 
@@ -295,25 +173,3 @@ plot(mod, plottype = "biplot")
 #  COMP.1 = color_tile("transparent","lightpink"),
 #  COMP.2 = color_tile("transparent","lightpink")
 #))
-
-
-
-## BLOCK 7: CHC stacked bar plot ----------------------------------------------------------------------------------------
-## CHC class proportions df 
-dfb <- read.csv("CHC_classes_StackedBar.csv")
-dfb$NEST <- factor(dfb$NEST, levels = c("UK","DA","AB","LP","MT","LS","LH","SW"))
-dfb$CLASS <- factor(dfb$CLASS, levels = c("Tri","Di","Mono","Alke","Alka"))
-## Stacked bar plot - TOTAL M:L
-sb1 <- ggplot(dfb, aes(fill=CLASS, y=PERC, x=NEST)) + 
-  #theme_minimal() +
-  theme(plot.title = element_text(size = 13, hjust = 0.5)) + # Change the title font
-  labs(title="CHC class proportions") +
-  geom_bar(position="dodge", stat="identity") +
-  #geom_vline(aes(xintercept=3.5),linetype="dashed",size=0.5) +
-  #scale_fill_manual(values=c("#CA2E55","#341566"),name="Class",labels=c("Total Methyl alkanes","Total n-Alkanes")) +
-  #scale_fill_manual(values=c("#9E2A2B","#042A2B"),name="Class",labels=c("Total Methyl alkanes","Total n-alkanes")) +
-  #scale_fill_manual(values=c("#341566","#51E18D","#6A83F1","#ECAA46","#9E2A2B")) +
-  scale_fill_manual(values=c("#9E2A2B","#ECAA46","#6A83F1","#51E18D","darkorchid4")) +
-  #theme(legend.position="none") +
-  xlab("Nest") +
-  ylab("Relative proportions")

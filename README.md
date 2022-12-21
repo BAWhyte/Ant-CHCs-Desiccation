@@ -42,9 +42,7 @@ summary(plsr_model)
 ```
 Just like a principal components analysis, the covariates are replaced with components that are transformations of the covariates you provided. Ideally, the majority of the variance in your data can be explained with a few of these components. So the first step to interpretation is to decide how many components are needed to explain our survival data. Remember, PLSR allows us to not only see how much of the X variance is explained (body size, CHC proportions, etc.) but also how much of the Y variance is explained (LT50 from all drierite tubes) by these components. The variance explained can be seen in the summary above, but I will summarize it in the table below:
 
-<center>
 ![Table1_PLSRSummary](https://user-images.githubusercontent.com/15988774/209012213-26dffe8f-e920-43ca-8e75-14593d889e00.jpg)
-</center>
 
 PC1 tells us the most about LT50, and the second component also adds some detail, but beyond that the help becomes negligible. PC2 is useful if we want to understand the dimensionality of the X variables (which is what usual PCA biplots show). RMSEP stands for "Root Mean Square Error of Prediction", and the decision of how many components to select should be judged by how minimized we can make this error prediction. Because 1.81 is as low as we can go, and we can achieve this with just the first two components, it is safe to just use these two components for our analysis and interpretation.
 

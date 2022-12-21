@@ -2,16 +2,15 @@
 
 ## I: New solutions to the multicollinearity problem 
 ***
+Chemical compounds on the exoskeleton of insects create a waxy waterproof layer that helps prevent water loss from their bodies. These "cuticular hydrocarbon compounds" (CHCs) are probably produced by the same biosynthetic pathways, so they are not independent variables. But if we want to know which CHCs or compound classes explain survival against water loss, we needed to treat them as separate variables in a regression model, which lead to impossibly large coefficients that cannot be trusted/interpreted. Sometimes, when covariates are so correlated with each other, regression models can't even output coefficients, and just give errors or "NA" instead. So, we need a strategy for dealing with multicollinearity. 
 
-The JEB reveiwers had some good points, but the strongest criticisms are aimed at using alkane ratios in our cox regression model, as well as using individual-level survival data (i.e. Time-to-death of each individual ant) when our covariates are at the level of the replicate group or nest. These were concerns of mine, too, as we built the paper around these cox regression models. Ultimately, this structure of our data, and our methods of analysis, were attempts to solve the problem of multicollinearity in our CHC data. CHCs are not independent variables, but if we want to know which CHCs or classes explained survival, we needed to treat them as separate variables in a regression model, which lead to impossibly large coefficients that cannot be trusted/interpreted. Sometimes, when covariates are so correlated with each other, regression models can't even output coefficients, and just give errors or "NA" instead. The ratio was an attempt to circumvent this by condensing all of the correlated CHC data into one or two covariates, but it is indeed an improper way to test for opposing effects from CHC class. Setting them up as a ratio means the compound classes would always have opposing effects (numerator vs. denominator) if they had any effects at all. 
-
-So, we need a new strategy for dealing with multicollinearity, if we do want to examine CHC proportions as covariates that explain survival during desiccation. I read some relevant chapters from ["Regression Model Strategies"](https://link.springer.com/book/10.1007/978-3-319-19425-7), and came across the solution many of us have heard of before: putting the data in a PCA model, and using the principal components as the model covariates instead. Previously, I had avoided this because the interpretation of a PCA and its components is limited. A PCA allows you to examine the dimensionality of the X values, and if you show that colonies are different in certain X values, then you could suggest that maybe this difference also explained the survival differences (Y values). However, there is a version of principal component regression that not only transforms X data into different dimensions, but also estimates how those dimensions relate to the response variable (Y values).
+I read some relevant chapters from ["Regression Model Strategies"](https://link.springer.com/book/10.1007/978-3-319-19425-7), and came across the solution many have heard of before: putting the data in a PCA model, and using the principal components as the model covariates instead. Previously, I had avoided this because the interpretation of a PCA and its components is limited. A PCA allows you to examine the dimensionality of the X values, and if you show that colonies are different in certain X values, then you could suggest that maybe this difference also explained the survival differences (Y values). However, there is a version of principal component regression that not only transforms X data into different dimensions, but also estimates how those dimensions relate to the response variable (Y values).
 
 This method is called **"Partial Least Squares Regression" (PLSR)**. It is called this because it partially involves using least squares in its formula to determine a line of best fit. An odd name, since I don't think it explains what makes it special. Here is a good description from [this website](http://www.sthda.com/english/articles/37-model-selection-essentials-in-r/152-principal-component-and-partial-least-squares-regression-essentials/): 
 
 > *"A possible drawback of PCR [principal component regression] is that we have no guarantee that the selected principal components are associated with the outcome. Here, the selection of the principal components to incorporate in the model is not supervised by the outcome variable. An alternative to PCR is the Partial Least Squares (PLS) regression, which identifies new principal components that not only summarizes the original predictors, but also that are related to the outcome. These components are then used to fit the regression model. So, compared to PCR, PLS uses a dimension reduction strategy that is supervised by the outcome."*
 
-Therefore, a PLS regression (PLSR) is a better tool if we want to claim that certain components or covariates drove survival in our desiccation assays. If you want to fully understand this method and its use in ecological research like our own, I highly suggest reading [this paper](https://onlinelibrary-wiley-com.libproxy.berkeley.edu/doi/10.1111/j.1600-0706.2008.16881.x) (cited below), as it explains why PLS is useful and how to interpret its results. For now, I will jump into performing the analysis in our data, and how to interpret the results. 
+Therefore, a PLS regression (PLSR) is a better tool if we want to claim that certain components or covariates drove survival in our experiments. If you want to fully understand this method and its use in ecological research like our own, I highly suggest reading [this paper](https://onlinelibrary-wiley-com.libproxy.berkeley.edu/doi/10.1111/j.1600-0706.2008.16881.x) (cited below), as it explains why PLS is useful and how to interpret its results.
 
 *Carrascal, L. M., Galván, I., & Gordo, O. (2009). Partial least squares regression as an alternative to current regression methods used in ecology. Oikos, 118(5), 681-690.*
 
@@ -20,11 +19,11 @@ Therefore, a PLS regression (PLSR) is a better tool if we want to claim that cer
 ***
 
 ```{r eval=TRUE}
-## Here is the structure or scale of our data, modified for use in PLS instead of Cox Regression:
+## Here is the structure or scale of our data, modified for use in PLSR:
 dfp <- subset(data, select = c(LT50d,Avg,pL,pMo,pDi,pTri,wChain))
 head(dfp)
 ```
-Note that Time-to-death of each ant is no longer the survival variable. Instead, we are using the LT50 of each test tube in the drierite treatment, because I think we shouldn't use individual-level survival data if none of our covariates are also at the individual-level. Also, remember we only use the drierite data in these models that include the body size, because the drierite tubes were the only ones we saved and measured body size. Thus, LT50 and Avg (body size) are unique to each row. The remaining variables are CHC metrics, which are the same for each nest ID. A list of abbreviations:
+LT50d is the response variable, measuring survival by lethal time at which 50% of the subjects have died. Avg refers to everage body mass, which we know influences water loss from any body. The remaining variables are CHC metrics. A list of abbreviations:
 
 - pl = % of n-alkanes on profile
 - pMo = % of mono-methyl alkanes on profile
@@ -32,7 +31,7 @@ Note that Time-to-death of each ant is no longer the survival variable. Instead,
 - pTri = % of tri-methyl alkanes on profile
 - wChain = Weighted average chain length of profile
 
-All of the CHC and body size data is the same as what we were using for the Cox regression, but no longer as ratios, and no longer divided into selected vs. total M:L. The proportions of each class for each nest ID come from Jan's supplemental data of the 2018 publication, which contains the nanogram estimates of each identified CHC from our ant nests. We no longer only examine a selected subset of the CHCs, but we can, if we want to. Inputting this data into a PLS looks like this:
+Inputting this data into a PLS looks like this:
 
 ```{r eval=TRUE}
 ## Partial least squares regression (formula + summary)
